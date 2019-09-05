@@ -10,7 +10,7 @@ import           Graphics.Gloss
 import           Graphics.Gloss.Interface.IO.Game
 import           Options.Applicative
 import           System.Exit
-import           System.FilePath                  ((-<.>))
+import           System.FilePath                  ((-<.>), takeFileName)
 
 import           Zipper
 
@@ -68,7 +68,11 @@ annotate gridW gridH imgW imgH images =
       pure . translate (ox + dx/2) (oy + dy/2) $ rect dx dy
 
     draw :: PicZip -> IO Picture
-    draw (Zipper _ (set, _, pic) _) = pure $ pic <> drawSet set
+    draw (Zipper _ (set, fp, pic) _) = pure $ mconcat
+      [ pic
+      , drawSet set
+      , color green . translate ((+12) . negate $ imgW'/2) ((+12) . negate $ imgH'/2) . scale 0.2 0.2 . text . takeFileName $ fp
+      ]
 
     handle :: Event -> PicZip -> IO PicZip
     handle (EventKey (MouseButton LeftButton) Down _ pos) (Zipper l (set, fp, pic) r) =
