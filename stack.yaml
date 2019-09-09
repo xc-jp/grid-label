@@ -1,6 +1,7 @@
 resolver: lts-14.4
 packages:
 - .
+
 nix:
   enable: true
   pure: false
@@ -9,3 +10,4 @@ nix:
     - libGL
     - freeglut
     - mesa_noglu.drivers
+    # - mesa_glu
