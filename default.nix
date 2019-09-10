@@ -10,6 +10,9 @@
           inherit (self) OpenGL mesa;
         };
         mesa = self.mesa_noglu;
+        gmp = super.gmp.override {
+          withStatic = true;
+        };
         freeglut = super.freeglut.overrideAttrs(old: {
             nativeBuildInputs = [super.cmake];
         });
