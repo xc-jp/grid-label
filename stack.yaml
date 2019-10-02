@@ -1,4 +1,4 @@
-resolver: lts-14.4
+resolver: lts-13.15
 packages:
 - .
 
@@ -8,6 +8,7 @@ nix:
   packages:
     - zlib
     - libGL
+    - libGLU
     - freeglut
     - mesa_noglu.drivers
     # - mesa_glu

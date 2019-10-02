@@ -31,3 +31,6 @@ executable grid-label
     , vector
   ghc-options:
     -Wall
+    -- -static
+  -- cc-options: -static
+  -- ld-options: -static -pthread
