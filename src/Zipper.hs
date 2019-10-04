@@ -11,9 +11,11 @@ fromList []    = Nothing
 
 goLeft, goRight :: Zipper a -> Zipper a
 
-goLeft (Zipper (x:l) f r) = Zipper l x (f:r)
+goLeft (Zipper [] f []) = Zipper [] f []
 goLeft (Zipper [] f r) = goLeft $ Zipper (reverse r) f []
+goLeft (Zipper (x:l) f r) = Zipper l x (f:r)
 
+goRight (Zipper [] f []) = Zipper [] f []
 goRight (Zipper l f (x:r)) = Zipper (f:l) x r
 goRight (Zipper l f []) = goRight $ Zipper [] f (reverse l)
 
