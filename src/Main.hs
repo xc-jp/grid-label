@@ -41,7 +41,7 @@ imgToPic :: Image PixelRGBA8 -> Picture
 imgToPic (Image w h d) = bitmapOfByteString w h (BitmapFormat TopToBottom PxRGBA) (BS.pack $ V.toList d) True
 
 annotate :: Int -> Int -> Int -> Int -> [(FilePath, Picture)] -> IO ()
-annotate gridW gridH imgW imgH images = 
+annotate gridW gridH imgW imgH images =
   playIO (InWindow "Annotate" (imgW,imgH) (0,0))
         black
         60
@@ -57,8 +57,9 @@ annotate gridW gridH imgW imgH images =
     dx = imgW' / gridW'
     dy = imgH' / gridH'
 
-    imgToGrid :: Float -> (Float, Float) -> (Int, Int)
-    imgToGrid s (x,y) = (floor $ (x/s + imgW'/2)/dx, floor $ (y/s + imgH'/2)/dy)
+    imgToGrid :: (Float, Float) -> (Int, Int)
+    imgToGrid (x,y) = (floor $ (x + imgW'/2)/dx, floor $ (y + imgH'/2)/dy)
+    scale2 (x,y) s = (x/s, y/s)
 
     gridToImg :: (Int, Int) -> (Float, Float)
     gridToImg (x,y) = (fromIntegral x * dx - imgW'/2, fromIntegral y * dy - imgH'/2)
@@ -66,20 +67,20 @@ annotate gridW gridH imgW imgH images =
     initState :: AppState
     initState = AppState (fromJust . fromList $ fmap (\(fp, img) -> (mempty,fp,img)) images) Released 1
 
-    drawSet s set = mconcat $ do
+    drawSet set = mconcat $ do
       x <- [0 .. gridW - 1]
       y <- [0 .. gridH - 1]
       let gridPos = (x,y)
       let (ox,oy) = gridToImg (x,y)
       let rect = if S.member gridPos set then rectangleSolid else rectangleWire
-      pure . scale s s . translate (ox + dx/2) (oy + dy/2) $ rect dx dy
+      pure . translate (ox + dx/2) (oy + dy/2) $ rect dx dy
 
     draw :: AppState -> IO Picture
-    draw (AppState (Zipper _ (set, fp, pic) _) _ s) = pure $ mconcat
-      [ scale s s pic
-      , drawSet s set
-      , color green . translate ((+12) . negate $ imgW'/2) ((+12) . negate $ imgH'/2) . scale 0.2 0.2 . text . takeFileName $ fp
-      ]
+    draw (AppState (Zipper _ (set, fp, pic) _) _ s) = pure $
+        scale s s bg <> translate ((+12) . negate $ s*imgW'/2) ((+12) . negate $ s*imgH'/2) pathText
+      where
+        bg = pic <> drawSet set
+        pathText = color green . scale 0.2 0.2 . text . takeFileName $ fp
 
     stateOp Selecting   = S.insert
     stateOp Deselecting = S.delete
@@ -88,11 +89,12 @@ annotate gridW gridH imgW imgH images =
     handle :: Event -> AppState -> IO AppState
     handle (EventKey (MouseButton LeftButton) Up _ _) (AppState zipper _ s) = pure $ AppState zipper Released s
     handle (EventKey (MouseButton LeftButton) Down _ pos) (AppState (Zipper l (set, fp, pic) r) _ s) = pure $
-      let pos' = imgToGrid s pos
+      let pos' = imgToGrid (scale2 pos s)
           mstate' = (if S.member pos' set then Deselecting else Selecting)
        in AppState (Zipper l (stateOp mstate' pos' set, fp, pic) r) mstate' s
 
-    handle (EventMotion pos) (AppState (Zipper l (set, fp, pic) r) mstate s) = pure $ AppState (Zipper l (stateOp mstate (imgToGrid s pos) set, fp, pic) r) mstate s
+    handle (EventMotion pos) (AppState (Zipper l (set, fp, pic) r) mstate s) = pure $
+      AppState (Zipper l (stateOp mstate (imgToGrid (scale2 pos s)) set, fp, pic) r) mstate s
 
     handle (EventKey key Down _ _) (AppState zipper _ s) | key `elem` leftKeys  = pure $ AppState (goLeft zipper) Released s
     handle (EventKey key Down _ _) (AppState zipper _ s) | key `elem` rightKeys = pure $ AppState (goRight zipper) Released s
@@ -105,7 +107,7 @@ annotate gridW gridH imgW imgH images =
       where
         winW' = fromIntegral winW
         winH' = fromIntegral winH
-        s = if imgW'/imgH' > winW'/winH' then winW' / imgW' else winH' / imgH'
+        s = min (winW'/imgW') (winH'/imgH')
 
     handle _ l = pure l
 
