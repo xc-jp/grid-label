@@ -57,9 +57,8 @@ annotate gridW gridH imgW imgH images =
     dx = imgW' / gridW'
     dy = imgH' / gridH'
 
-    imgToGrid :: (Float, Float) -> (Int, Int)
-    imgToGrid (x,y) = (floor $ (x + imgW'/2)/dx, floor $ (y + imgH'/2)/dy)
-    scale2 (x,y) s = (x/s, y/s)
+    imgToGrid :: Float -> (Float, Float) -> (Int, Int)
+    imgToGrid s (x,y) = (floor $ (x/s + imgW'/2)/dx, floor $ (y/s + imgH'/2)/dy)
 
     gridToImg :: (Int, Int) -> (Float, Float)
     gridToImg (x,y) = (fromIntegral x * dx - imgW'/2, fromIntegral y * dy - imgH'/2)
@@ -89,12 +88,12 @@ annotate gridW gridH imgW imgH images =
     handle :: Event -> AppState -> IO AppState
     handle (EventKey (MouseButton LeftButton) Up _ _) (AppState zipper _ s) = pure $ AppState zipper Released s
     handle (EventKey (MouseButton LeftButton) Down _ pos) (AppState (Zipper l (set, fp, pic) r) _ s) = pure $
-      let pos' = imgToGrid (scale2 pos s)
+      let pos' = imgToGrid s pos
           mstate' = (if S.member pos' set then Deselecting else Selecting)
        in AppState (Zipper l (stateOp mstate' pos' set, fp, pic) r) mstate' s
 
     handle (EventMotion pos) (AppState (Zipper l (set, fp, pic) r) mstate s) = pure $
-      AppState (Zipper l (stateOp mstate (imgToGrid (scale2 pos s)) set, fp, pic) r) mstate s
+      AppState (Zipper l (stateOp mstate (imgToGrid s pos) set, fp, pic) r) mstate s
 
     handle (EventKey key Down _ _) (AppState zipper _ s) | key `elem` leftKeys  = pure $ AppState (goLeft zipper) Released s
     handle (EventKey key Down _ _) (AppState zipper _ s) | key `elem` rightKeys = pure $ AppState (goRight zipper) Released s
